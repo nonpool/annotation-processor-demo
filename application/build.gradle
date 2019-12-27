@@ -1,0 +1,18 @@
+plugins {
+    id 'java'
+}
+
+group 'com.nonpool.processor'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(":annotation")
+    annotationProcessor project(":processor")
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}

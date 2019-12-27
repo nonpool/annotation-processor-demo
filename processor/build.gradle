@@ -1,0 +1,20 @@
+plugins {
+    id 'java'
+}
+
+group 'com.nonpool.processor'
+version '1.0'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    //用此方法引用tools.jar在intellij里使用build的时候找不到tools.jar相关类
+//    compile fileTree(dir: 'libs', include: ['tools.jar'])
+    compile files("${System.properties['java.home']}/../lib/tools.jar")
+    implementation project(":annotation")
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
