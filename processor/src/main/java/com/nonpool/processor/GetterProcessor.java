@@ -7,7 +7,6 @@ import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.TreeMaker;
-import com.sun.tools.javac.tree.TreeTranslator;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.ListBuffer;
@@ -24,6 +23,10 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.nonpool.processor.ListConverter.toToolsList;
+import static java.util.stream.Collectors.toList;
 
 @SupportedAnnotationTypes("com.nonpool.annotation.Getter")
 public class GetterProcessor extends AbstractProcessor {
@@ -46,29 +49,26 @@ public class GetterProcessor extends AbstractProcessor {
     @Override
     public synchronized boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         Set<? extends Element> set = roundEnv.getElementsAnnotatedWith(Getter.class);
-        set.forEach(element -> {
-            JCTree jcTree = trees.getTree(element);
-            jcTree.accept(new TreeTranslator() {
-                @Override
-                public void visitClassDef(JCTree.JCClassDecl jcClassDecl) {
-                    List<JCTree.JCVariableDecl> jcVariableDeclList = List.nil();
 
-                    for (JCTree tree : jcClassDecl.defs) {
-                        if (tree.getKind().equals(Tree.Kind.VARIABLE)) {
-                            JCTree.JCVariableDecl jcVariableDecl = (JCTree.JCVariableDecl) tree;
-                            jcVariableDeclList = jcVariableDeclList.append(jcVariableDecl);
-                        }
-                    }
+        Set<JCTree.JCClassDecl> jCClassDeclSet = set.stream()
+                .map(element -> trees.getTree(element))
+                .filter(tree -> tree.getKind() == Tree.Kind.CLASS)
+                .map(tree -> (JCTree.JCClassDecl) tree)
+                .collect(Collectors.toSet());
 
-                    jcVariableDeclList.forEach(jcVariableDecl -> {
-                        messager.printMessage(Diagnostic.Kind.NOTE, jcVariableDecl.getName() + " has been processed");
-                        jcClassDecl.defs = jcClassDecl.defs.prepend(makeGetterMethodDecl(jcVariableDecl));
-                    });
-                    super.visitClassDef(jcClassDecl);
-                }
+        for (JCTree.JCClassDecl jcClassDecl : jCClassDeclSet) {
+            java.util.List<JCTree> collect =
+                    jcClassDecl.defs.stream()
+                            .filter(treeDef -> treeDef.getKind() == Tree.Kind.VARIABLE)
+                            .map(treeDef -> (JCTree.JCVariableDecl) treeDef)
+                            .map(this::makeGetterMethodDecl)
+                            .map(jCMethodDecl -> (JCTree) jCMethodDecl)
+                            .collect(toList());
 
-            });
-        });
+            List<JCTree> jcMethodDecls = toToolsList(collect);
+            messager.printMessage(Diagnostic.Kind.NOTE,jcMethodDecls.toString());
+            jcClassDecl.defs = jcClassDecl.defs.prependList(jcMethodDecls);
+        }
 
         return true;
     }
