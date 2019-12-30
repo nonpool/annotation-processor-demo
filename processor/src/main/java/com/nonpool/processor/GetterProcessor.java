@@ -49,7 +49,31 @@ public class GetterProcessor extends AbstractProcessor {
     @Override
     public synchronized boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         Set<? extends Element> set = roundEnv.getElementsAnnotatedWith(Getter.class);
+        generateGetterForClass(set);
+        generateGetterForField(set);
 
+        return true;
+    }
+
+    private void generateGetterForField(Set<? extends Element> set) {
+        java.util.List<JCTree.JCVariableDecl> jcVariableDeclList = set.stream()
+                .map(element -> trees.getTree(element))
+                .filter(tree -> tree.getKind() == Tree.Kind.VARIABLE)
+                .map(tree -> (JCTree.JCVariableDecl) tree)
+                .collect(toList());
+
+        if (!jcVariableDeclList.isEmpty()) {
+            java.util.List<JCTree> clolect = jcVariableDeclList.stream()
+                    .map(this::makeGetterMethodDecl)
+                    .collect(toList());
+
+            List<JCTree> jcMethodDecls = toToolsList(clolect);
+            JCTree.JCClassDecl jCClassDecl = (JCTree.JCClassDecl) trees.getTree(jcVariableDeclList.get(0).sym.owner);
+            jCClassDecl.defs = jCClassDecl.defs.appendList(jcMethodDecls);
+        }
+    }
+
+    private void generateGetterForClass(Set<? extends Element> set) {
         Set<JCTree.JCClassDecl> jCClassDeclSet = set.stream()
                 .map(element -> trees.getTree(element))
                 .filter(tree -> tree.getKind() == Tree.Kind.CLASS)
@@ -69,24 +93,6 @@ public class GetterProcessor extends AbstractProcessor {
             messager.printMessage(Diagnostic.Kind.NOTE, jcMethodDecls.toString());
             jcClassDecl.defs = jcClassDecl.defs.prependList(jcMethodDecls);
         }
-
-        java.util.List<JCTree.JCVariableDecl> jcVariableDeclList = set.stream()
-                .map(element -> trees.getTree(element))
-                .filter(tree -> tree.getKind() == Tree.Kind.VARIABLE)
-                .map(tree -> (JCTree.JCVariableDecl) tree)
-                .collect(toList());
-
-        if (!jcVariableDeclList.isEmpty()) {
-            java.util.List<JCTree> clolect1 = jcVariableDeclList.stream()
-                    .map(this::makeGetterMethodDecl)
-                    .collect(toList());
-
-            List<JCTree> jcMethodDecls = toToolsList(clolect1);
-            JCTree.JCClassDecl jCClassDecl = (JCTree.JCClassDecl) trees.getTree(jcVariableDeclList.get(0).sym.owner);
-            jCClassDecl.defs = jCClassDecl.defs.appendList(jcMethodDecls);
-        }
-
-        return true;
     }
 
     private JCTree.JCMethodDecl makeGetterMethodDecl(JCTree.JCVariableDecl jcVariableDecl) {
