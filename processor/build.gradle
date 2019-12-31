@@ -17,4 +17,5 @@ dependencies {
     compile files("${System.properties['java.home']}/../lib/tools.jar")
     implementation project(":annotation")
     testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile group: 'com.google.testing.compile', name: 'compile-testing', version: '0.18'
 }
