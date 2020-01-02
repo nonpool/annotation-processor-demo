@@ -9,5 +9,7 @@ public class Application {
         DummyForField dummyForField = new DummyForField(18, "Nana");
         System.out.println(dummyForField.getAge());
         System.out.println(dummyForField.getName());
+
+        System.out.println(DummyFactory.dummy);
     }
 }
