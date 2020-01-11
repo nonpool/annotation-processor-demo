@@ -1,2 +1,3 @@
 com.nonpool.processor.GetterProcessor
 com.nonpool.processor.FactoryProcessor
+com.nonpool.processor.MonitorProcessor
